@@ -3,7 +3,7 @@ Med_Query is an effective and efficient framework for medical image analysis. Th
 
 ## Overview
 Currently the project is organized as follows:
-- flare (competition solution for FLARE22)
+- flare (solution for MICCAI2022 FLARE Challenge)
 
 ## Installation
 ```bash
