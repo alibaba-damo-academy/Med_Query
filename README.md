@@ -3,7 +3,7 @@ Med_Query is an effective and efficient framework for medical image analysis. Th
 official implementation of our paper:   
 - "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding" (under review).
 
-<img src=figures/poc.png width=40% />
+<img src=figures/poc.png width=100% />
 
 ## Installation
 ```bash
@@ -150,7 +150,7 @@ med_query_vis -m /loal_path_to_experiment/masks_2mm --info_csv /local_path_to_ex
 ```
 Here is a video demo:
 
-<img src=figures/3D_detection_visualization.gif width=30% />
+<img src=figures/3D_detection_visualization.gif width=80% />
 
 ## License
 Med_Query is released under the Apache 2.0 license.
