@@ -3,7 +3,7 @@ Med_Query is an effective and efficient framework for medical image analysis. Th
 official implementation of our paper:   
 - "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding" (under review).
 
-<img src=figures/poc.png width=100% />
+<img src=figures/poc.png width=80% />
 
 ## Installation
 ```bash
@@ -15,7 +15,7 @@ python setup.py install
 ## Data Preparation
 We elaborate on the instructions based on the rib parsing task, other experiments can follow  
 the similar settings.
-- Set enviroment variable
+- Set an environment variable
 ```
 $ echo "export WORK_DIR=/path_to_work_dir" >> ～/.bashrc
 $ source ~/.bashrc
