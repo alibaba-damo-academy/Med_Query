@@ -44,9 +44,9 @@ def parse_requirements(filename="requirements.txt"):
 required_packages = parse_requirements()
 
 setup(
-    name="flare",
+    name="med_query",
     version="1.0",
-    description="Codebase for FLARE22 competition",
+    description="Codebase for Med-Query Framework",
     author="DAMO MIA group",
     packages=find_packages(),
     install_requires=required_packages,
@@ -58,5 +58,15 @@ setup(
     zip_safe=False,
     test_suite="nose.collector",
     tests_require=["nose"],
-    entry_points={"console_scripts": ["flare_test=flare.det.test:main"]},
+    entry_points={
+        "console_scripts": [
+            "med_query_vis=med_query.utils.visual:main",
+            "med_query_train=med_query.utils.cli_functions:med_det_train_dist",
+            "med_query_train_seg=med_query.utils.cli_functions:med_det_seg_train_dist",
+            "med_query_test=med_query.det.test:main",
+            "med_query_valid=med_query.det.valid:main",
+            "med_query_det_metrics=med_query.utils.det_metrics:main",
+            "med_query_seg_metrics=med_query.utils.seg_metrics:main",
+        ]
+    },
 )
