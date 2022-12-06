@@ -154,3 +154,16 @@ Here is a video demo:
 
 ## License
 Med_Query is released under the Apache 2.0 license.
+
+## Citation
+If you find this project useful in your research, please cite the following paper:
+```
+@misc{guo2022medquery,
+      title={Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embedding}, 
+      author={Heng Guo and Jianfeng Zhang and Ke Yan and Le Lu and Minfeng Xu},
+      year={2022},
+      eprint={2212.02014},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
