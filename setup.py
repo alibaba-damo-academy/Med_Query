@@ -50,23 +50,22 @@ setup(
     author="DAMO MIA group",
     packages=find_packages(),
     install_requires=required_packages,
-    dependency_links=[
-        "https://download.pytorch.org/whl/torch_stable.html",
-        "https://download.openmmlab.com/mmcv/dist/cu101/torch1.7.0/index.html",
-    ],
+    dependency_links=[],
     include_package_data=True,
     zip_safe=False,
     test_suite="nose.collector",
     tests_require=["nose"],
     entry_points={
         "console_scripts": [
-            "med_query_vis=med_query.utils.visual:main",
-            "med_query_train=med_query.utils.cli_functions:med_det_train_dist",
-            "med_query_train_seg=med_query.utils.cli_functions:med_det_seg_train_dist",
+            "med_query_vis=med_query.vis.visual:main",
+            "med_query_train_det=med_query.utils.cli_functions:med_query_det_train_dist",
+            "med_query_train_seg=med_query.utils.cli_functions:med_query_seg_train_dist",
+            "med_query_train_roi=med_query.utils.cli_functions:med_query_seg_train_dist",
             "med_query_test=med_query.det.test:main",
             "med_query_valid=med_query.det.valid:main",
             "med_query_det_metrics=med_query.utils.det_metrics:main",
             "med_query_seg_metrics=med_query.utils.seg_metrics:main",
+            "stop_distributed_training=med_query.utils.cli_functions:stop_distributed_training",
         ]
     },
 )

@@ -4,9 +4,10 @@ import numpy as np
 import SimpleITK as sitk
 import torch
 import torch.nn.functional as F
+from typing import Iterable, List, Tuple, Union
+
 from med_query.utils.frame import Frame3d, world_box
 from med_query.utils.framed_tensor import FramedTensor
-from typing import Iterable, List, Tuple, Union
 
 
 def resample_itkimage_torai(

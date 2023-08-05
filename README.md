@@ -1,30 +1,42 @@
 ## Med_Query
 Med_Query is an effective and efficient framework for medical image analysis. This repository is the  
 official implementation of our paper:   
-- "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding" (under review).
+- "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding" (in revision).
 
 <img src=figures/poc.png width=80% />
 
 ## Installation
+- Python = 3.9 required
 ```bash
 git clone https://github.com/alibaba-damo-academy/Med_Query.git
 cd Med_Query
-python setup.py install
+sh install.sh
 ```
 
-## Data Preparation
+## Quick Start
+- Download RibInst masks and models from [Google Drive](https://drive.google.com/file/d/1vEzyjaUpXu9VPxPG8QXmLlGsI82ZA92P/view?usp=drive_link).
+- Testing the rib parsing pipeline using your own data (NIFTI format required).
+```
+$ med_query_test --snapshot_det /path_to_models/det.pt --snapshot_seg /path_to_models/seg.pt --snapshot_roi /path_to_models/roi.pt -i /your_data_directory/ -o /output_directory/
+```
+
+## Data Preparation For Training From Scratch
 We elaborate on the instructions based on the rib parsing task, other experiments can follow  
 the similar settings.
 - Set an environment variable
 ```
-$ echo "export WORK_DIR=/path_to_work_dir" >> ～/.bashrc
+$ echo "export WORK_DIR=/path_to_work_dir" >> ~/.bashrc
 $ source ~/.bashrc
 ```
-- Download raw data and labeled masks to:
-    * $WORK_DIR/rib_experiment/images
-    * $WORK_DIR/rib_experiment/masks
+- Prepare images and masks:
+    * Download images from RibFrac dataset: [Trainset P1](https://zenodo.org/record/3893508), [Trainset P2](https://zenodo.org/record/3893498), [Validset](https://zenodo.org/record/3893496), [Testset](https://zenodo.org/record/3993380).
+    * Download RibInst masks as mentioned above.
 
-- Download dataset filelist and split files to:
+- Extract raw data and labeled masks into:
+    * $WORK_DIR/rib_experiment/images/
+    * $WORK_DIR/rib_experiment/masks/
+
+- Copy dataset filelist and split files from RibInst directory into:
     * $WORK_DIR/rib_experiment/filelist.csv
     * $WORK_DIR/rib_experiment/trainset.csv
     * $WORK_DIR/rib_experiment/validset.csv
@@ -32,12 +44,12 @@ $ source ~/.bashrc
 
 - Data preprocessing offline:
 ```
-$ python scripts/preprocess_rib.py --crop --use_pca -n 32
+$ python med_query/scripts/preprocess_rib.py -f $WORK_DIR/rib_experiment/filelist.csv -i $WORK_DIR/rib_experiment/images/ -m $WORK_DIR/rib_experiment/masks/ -o $WORK_DIR/rib_experiment/ --crop -n 32
 ```
 Generated data by the preprocessing script are listed as follows:  
 - Cropped data (Optional):
-    * $WORK_DIR/rib_experiment/images_cropped
-    * $WORK_DIR/rib_experiment/masks_cropped
+    * $WORK_DIR/rib_experiment/images_cropped/
+    * $WORK_DIR/rib_experiment/masks_cropped/
 
 - Resampled data (isotropic 2mm data of raw data, also including cropped data if it exists):
     * $WORK_DIR/rib_experiment/images_2mm
@@ -93,7 +105,7 @@ $WORK_DIR
 ```
 # modify `xxx_config.py` as needed
 # `tag` is a string to distinguish each trial
-$ med_query_train -c det/configs/xxx_config.py -g 0,1,2,3,4,5,6,7 -t tag -p 12345
+$ med_query_train_det -c det/configs/xxx_config.py -g 0,1,2,3,4,5,6,7 -t tag -p 12345
 ```
 
 - Start training of segmentation model
@@ -118,31 +130,27 @@ $ kill $(ps aux | grep train.py | grep -v grep | awk '{print $2}')
 ## Validation
 - We support online and offline validation of detection model, the offline validation command is:
 ```
-$ med_query_valid --snapshot /path_to_det_model/ -d validset
+$ med_query_valid --snapshot_det /path_to_det_model/ -d validset
 ```
-*Validation results will be saved at $WORK_DIR/rib_experiment/save_results/MedDetSeg_ValRes.csv*
+*Validation results will be saved at $WORK_DIR/rib_experiment/results/MedDetSeg_ValRes.csv*
 
 ## Testing
 - Only testing detection model given test images directory
 ```
-$ med_query_test --snapshot /path_to_det_model/ --image_dir /directory_to_test_images/ 
+$ med_query_test --snapshot_det /path_to_det_model/ -i /input_directory/ -o /output_directory/
 ```
-*Testing results will be saved at $WORK_DIR/rib_experiment/save_results/MedDetSeg_TestRes.csv*
 
 - Testing the whole pipeline
 ```
-$ med_query_test --snapshot /path_to_det_model/ --snapshot_seg /path_to_seg_model/ --snapshot_roi   
-/path_to_roi_model/ --image_dir /directory_to_test_images/ 
+$ med_query_test --snapshot_det /path_to_det_model/ --snapshot_seg /path_to_seg_model/ --snapshot_roi   
+/path_to_roi_model/ -i /input_directory/ -o /output_directory/
 ```
-*Detection results will be saved at $WORK_DIR/rib_experiment/save_results/MedDetSeg_TestRes.csv*  
-*Segmentation masks will be saved at $WORK_DIR/rib_experiment/save_results/save_masks*
 
 - Query certain ribs in the whole pipeline
 ```
-$ med_query_test --snapshot /path_to_det_model/ --snapshot_seg /path_to_seg_model/ --snapshot_roi  
-/path_to_roi_model/ --image_dir /directory_to_test_images/ -q 1,3,5,7,9
+$ med_query_test --snapshot_det /path_to_det_model/ --snapshot_seg /path_to_seg_model/ --snapshot_roi  
+/path_to_roi_model/ -i /input_directory/ -o /output_directory/ -q 1,3,5,7,9
 ```
-*Results directory is the same as the above example.*
 
 ## 3D Detection Visualization
 ```

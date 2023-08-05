@@ -4,10 +4,10 @@ import numpy as np
 import SimpleITK as sitk
 import torch
 import torch.nn as nn
+
 from med_query.utils.frame import Frame3d
 from med_query.utils.itk import mask_bbox
 from med_query.utils.resample import resample_base
-
 from ..builder import DETECTORS
 
 

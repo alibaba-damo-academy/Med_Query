@@ -2,8 +2,25 @@
 
 import numpy as np
 import SimpleITK as sitk
+import torch
+from typing import Iterable, Optional, Tuple, Union
+
 from med_query.utils.frame import voxel_to_world
-from typing import Optional, Tuple
+
+
+def crop(sitk_im: sitk.Image, sp: Iterable[int], ep: Iterable[int]) -> sitk.Image:
+    """
+    crop a sitk image with voxel coordinates.
+
+    :param sitk_im: a sitk image object
+    :param sp: a vector with 3 int values, inclusive
+    :param ep: a vector with 3 int values, exclusive
+    :return: the croped sitk image
+    """
+    size = np.array(ep) - np.array(sp)
+    index = np.array(sp, np.int32)
+    im_crop = sitk.RegionOfInterest(sitk_im, size=size.tolist(), index=index.tolist())
+    return im_crop
 
 
 def normalize_sitk_im(
@@ -78,3 +95,84 @@ def mask_bbox(mask: sitk.Image, mask_value: Optional[int] = None) -> Tuple[np.nd
         min_corner = corners.min(axis=0)
         max_corner = corners.max(axis=0)
     return min_corner, max_corner
+
+
+def cal_dsc(
+    result_mask: Union[sitk.Image, np.ndarray],
+    label_mask: Union[sitk.Image, np.ndarray],
+    num_classes: Optional[int] = None,
+    use_gpu=False,
+):
+    """
+    calculates the dice coefficients for multi-label masks, note that nan infers that
+    the label mask also does not contain that label
+
+    :param result_mask: sitk image object for the result mask from model
+    :param label_mask: sitk image object for the labelled mask
+    :param num_classes: number of classes including background, it can be set to 2
+                        to get binary dice of multilabel mask
+    :return: a list of float
+    """
+
+    if isinstance(result_mask, sitk.Image):
+        assert (
+            np.linalg.norm(np.array(result_mask.GetSpacing()) - np.array(label_mask.GetSpacing()))
+            < 1e-2
+        ), "the spacings of label mask and result mask do not match"
+        result_mask = sitk.GetArrayFromImage(result_mask)
+        label_mask = sitk.GetArrayFromImage(label_mask)
+
+    assert (
+        result_mask.shape == label_mask.shape
+    ), "the shapes of label mask and result mask do not match"
+
+    result_tensor = torch.from_numpy(result_mask.astype(np.int32))
+    label_tensor = torch.from_numpy(label_mask.astype(np.int32))
+    if use_gpu and torch.cuda.is_available():
+        result_tensor = result_tensor.cuda()
+        label_tensor = label_tensor.cuda()
+
+    v1 = torch.vstack(torch.where(result_tensor > 0))
+    if 0 in v1.size():
+        min_corner_1 = result_tensor.new_zeros(3)
+        max_corner_1 = result_tensor.new_tensor(result_tensor.size())
+    else:
+        min_corner_1, _ = v1.min(dim=1)
+        max_corner_1, _ = v1.max(dim=1)
+
+    v2 = torch.vstack(torch.where(label_tensor > 0))
+    if 0 in v2.size():
+        min_corner_2 = label_tensor.new_zeros(3)
+        max_corner_2 = label_tensor.new_tensor(label_tensor.size())
+    else:
+        min_corner_2, _ = v2.min(dim=1)
+        max_corner_2, _ = v2.max(dim=1)
+
+    spz, spy, spx = torch.minimum(min_corner_1, min_corner_2)
+    epz, epy, epx = torch.maximum(max_corner_1, max_corner_2)
+
+    result_index = result_tensor[spz:epz, spy:epy, spx:epx].long()
+    label_index = label_tensor[spz:epz, spy:epy, spx:epx].long()
+
+    if num_classes is None:
+        num_classes = torch.unique(label_index).__len__()
+
+    if num_classes == 2:
+        result_index[result_index > 0] = 1
+        label_index[label_index > 0] = 1
+    result_tensor_oh = result_tensor.new_zeros(
+        [num_classes, *result_index.size()], dtype=torch.uint8
+    )
+    result_tensor_oh.scatter_(0, result_index.unsqueeze(0), 1)
+    label_tensor_oh = label_tensor.new_zeros([num_classes, *label_index.size()], dtype=torch.uint8)
+    label_tensor_oh.scatter_(0, label_index.unsqueeze(0), 1)
+
+    eps = 1e-7
+    intersection = torch.sum(result_tensor_oh * label_tensor_oh, dim=[1, 2, 3])
+    dices = (2.0 * intersection) / (
+        result_tensor_oh.sum(dim=[1, 2, 3]) + label_tensor_oh.sum(dim=[1, 2, 3]) + eps
+    )
+
+    dices = torch.where(label_tensor_oh.sum(dim=[1, 2, 3]) > 0, dices, dices.new_tensor(np.nan))
+    dices = dices.cpu().numpy()[1:]
+    return dices

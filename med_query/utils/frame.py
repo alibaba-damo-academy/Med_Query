@@ -1,10 +1,9 @@
 # Copyright (c) DAMO Health
 
-from typing import Dict, List, Tuple, Union
-
 import numpy as np
 import SimpleITK as sitk
 import torch
+from typing import Dict, List, Tuple, Union
 
 
 class Frame3d(object):

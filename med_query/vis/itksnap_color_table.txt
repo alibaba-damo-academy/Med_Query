@@ -1,0 +1,66 @@
+# This file was exported from ITK-SNAP
+################################################
+# ITK-SnAP Label Description File
+# File format:
+# IDX   -R-  -G-  -B-  -A--  VIS MSH  LABEL
+# Fields:
+#    IDX:   Zero-based index
+#    -R-:   Red color component (0..255)
+#    -G-:   Green color component (0..255)
+#    -B-:   Blue color component (0..255)
+#    -A-:   Label transparency (0.00 .. 1.00)
+#    VIS:   Label visibility (0 or 1)
+#    IDX:   Label mesh visibility (0 or 1)
+#  LABEL:   Label description
+################################################
+    0     0    0    0        0  0  0    "Clear Label"
+    1   255    0    0        1  1  1    "Label 1"
+    2     0  255    0        1  1  1    "Label 2"
+    3     0    0  255        1  1  1    "Label 3"
+    4   255  255    0        1  1  1    "Label 4"
+    5     0  255  255        1  1  1    "Label 5"
+    6   255    0  255        1  1  1    "Label 6"
+    7   255  239  213        1  1  1    "Label 7"
+    8     0    0  205        1  1  1    "Label 8"
+    9   205  133   63        1  1  1    "Label 9"
+   10   210  180  140        1  1  1    "Label 10"
+   11   102  205  170        1  1  1    "Label 11"
+   12     0    0  128        1  1  1    "Label 12"
+   13     0  139  139        1  1  1    "Label 13"
+   14    46  139   87        1  1  1    "Label 14"
+   15   255  228  225        1  1  1    "Label 15"
+   16   106   90  205        1  1  1    "Label 16"
+   17   221  160  221        1  1  1    "Label 17"
+   18   233  150  122        1  1  1    "Label 18"
+   19   165   42   42        1  1  1    "Label 19"
+   20   255  250  250        1  1  1    "Label 20"
+   21   147  112  219        1  1  1    "Label 21"
+   22   218  112  214        1  1  1    "Label 22"
+   23    75    0  130        1  1  1    "Label 23"
+   24   255  182  193        1  1  1    "Label 24"
+   25    60  179  113        1  1  1    "Label 25"
+   26   255  235  205        1  1  1    "Label 26"
+   27   255  228  196        1  1  1    "Label 27"
+   28   218  165   32        1  1  1    "Label 28"
+   29     0  128  128        1  1  1    "Label 29"
+   30   188  143  143        1  1  1    "Label 30"
+   31   255  105  180        1  1  1    "Label 31"
+   32   255  218  185        1  1  1    "Label 32"
+   33   222  184  135        1  1  1    "Label 33"
+   34   127  255    0        1  1  1    "Label 34"
+   35   139   69   19        1  1  1    "Label 35"
+   36   124  252    0        1  1  1    "Label 36"
+   37   255  255  224        1  1  1    "Label 37"
+   38    70  130  180        1  1  1    "Label 38"
+   39     0  100    0        1  1  1    "Label 39"
+   40   238  130  238        1  1  1    "Label 40"
+   41   238  232  170        1  1  1    "Label 41"
+   42   240  255  240        1  1  1    "Label 42"
+   43   245  222  179        1  1  1    "Label 43"
+   44   184  134   11        1  1  1    "Label 44"
+   45    32  178  170        1  1  1    "Label 45"
+   46   255   20  147        1  1  1    "Label 46"
+   47    25   25  112        1  1  1    "Label 47"
+   48   112  128  144        1  1  1    "Label 48"
+   49    34  139   34        1  1  1    "Label 49"
+   50   248  248  255        1  1  1    "Label 50"

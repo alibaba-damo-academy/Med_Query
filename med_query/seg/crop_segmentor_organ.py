@@ -1,45 +1,103 @@
 # Copyright (c) DAMO Health
 
 import json
-import line_profiler
 import numpy as np
 import os
 import SimpleITK as sitk
 import skimage.measure as measure
-import sys
 import time
 import torch
 from easydict import EasyDict as edict
+
+from med_query.utils.common import get_network
 from med_query.utils.frame import Frame3d, set_frame_as_ref
 from med_query.utils.framed_tensor import FramedTensor
+from med_query.utils.io_utils import load_module_from_file
 from med_query.utils.resample import crop_roi_with_center, merge_mask_by_prob_patches
 
 
-class CropSegmentor(object):
+class CropSegmentorOrgan(object):
     def __init__(self, model_path, verbose=False, run_profile=False, rank=0):
-        super(CropSegmentor, self).__init__()
+        super(CropSegmentorOrgan, self).__init__()
         self.verbose = verbose
         self.run_profile = run_profile
-        self.run_remove_scc = False
+        self.run_remove_scc = True
         load_begin = time.time()
         assert os.path.isfile(model_path) or os.path.isdir(model_path), "model file not found!"
 
         if os.path.isdir(model_path):
-            if rank == 0 and self.verbose:
-                print("Loading a cluster of models...")
+            if rank == 0:
+                print("loading a cluster of models...")
 
             self.net = {}
             model_dirs = os.listdir(model_path)
             model_dirs = sorted(model_dirs, key=lambda x: int(x.split(".")[0].split("_")[-1]))
-            for model in model_dirs:
-                model_single = os.path.join(model_path, model)
-                model_cluster_name = model.split(".")[0].split("_")[-1]
-                extra_files = {"max_stride": "", "cfg": ""}
-                net = torch.jit.load(model_single, _extra_files=extra_files, map_location="cpu")
-                self.net[model_cluster_name] = net.cuda().eval()
-                cfg = edict(json.loads(extra_files["cfg"]))
-                self.organ_dict = cfg.dataset.organ_dict
-                self.organ_cluster = cfg.dataset.organ_cluster
+
+            if os.path.isdir(os.path.join(model_path, model_dirs[0])):
+                for model_dir in model_dirs:
+                    model_cluster_name = model_dir.split("_")[-1]
+                    model_ckpt = os.path.join(model_path, model_dir, "checkpoints")
+                    ckpts = os.listdir(model_ckpt)
+                    ckpts = sorted(ckpts, key=lambda x: int(x.split("_")[-1]), reverse=True)
+                    latest_model_path = os.path.join(model_ckpt, ckpts[0], "params.pth")
+
+                    config_file = os.path.join(os.path.dirname(latest_model_path), "config.py")
+                    assert os.path.isfile(config_file), "file config.py not found!"
+                    cfg_module = load_module_from_file(config_file)
+                    cfg = cfg_module.cfg
+                    self.organ_dict = cfg.dataset.organ_dict
+                    self.organ_cluster = cfg.dataset.organ_cluster
+
+                    epoch = int(ckpts[0].split("_")[-1])
+                    ckpt = torch.load(latest_model_path, map_location="cpu")
+
+                    out_channels = len(self.organ_cluster[model_cluster_name]["label"]) + 1
+                    out_channels = (
+                        2
+                        if model_cluster_name == "0" or model_cluster_name == "1"
+                        else out_channels
+                    )
+                    net, self.max_stride = get_network(
+                        cfg.network.net_name,
+                        cfg.network.in_channels,
+                        out_channels,
+                        cfg.network.dimensions,
+                        cfg.network.normalization,
+                        cfg.network.base,
+                        cfg.network.downsample,
+                    )
+                    net.load_state_dict(ckpt["model_state_dict"])
+                    if torch.cuda.is_available():
+                        net = net.cuda()
+                    self.net[model_cluster_name] = net.eval()
+                    labels = self.organ_cluster[model_cluster_name]["label"]
+                    organs = [self.organ_dict[str(i)]["organ"] for i in labels]
+                    if rank == 0:
+                        model_cluster_name = (
+                            "X" if model_cluster_name == "10" else model_cluster_name
+                        )
+                        print(
+                            f"segmentor_{model_cluster_name} at epoch {epoch} for {organs} \
+                                was loaded"
+                        )
+            else:  # models in .pt file
+                for model in model_dirs:
+                    model_single = os.path.join(model_path, model)
+                    model_cluster_name = model.split(".")[0].split("_")[-1]
+                    extra_files = {"max_stride": "", "cfg": ""}
+                    net = torch.jit.load(
+                        model_single,
+                        _extra_files=extra_files,
+                        map_location="cpu",
+                    )
+                    if torch.cuda.is_available():
+                        net = net.cuda()
+                    self.net[model_cluster_name] = net.eval()
+                    cfg = edict(json.loads(extra_files["cfg"]))
+                    self.organ_dict = cfg.dataset.organ_dict
+                    self.organ_cluster = cfg.dataset.organ_cluster
+                    labels = self.organ_cluster[model_cluster_name]["label"]
+                    organs = [self.organ_dict[str(i)]["organ"] for i in labels]
 
         elif model_path.endswith(".pt"):
             extra_files = {"max_stride": "", "cfg": ""}
@@ -47,9 +105,26 @@ class CropSegmentor(object):
             self.max_stride = int(extra_files["max_stride"])
             cfg = edict(json.loads(extra_files["cfg"]))
             self.organ_dict = cfg.dataset.organ_dict
-            self.net = net.cuda().eval()
+            if torch.cuda.is_available():
+                net = net.cuda()
+            self.net = net.eval()
         else:
-            raise ValueError("Unexpected Snapshot!")
+            ckpt = torch.load(model_path, map_location="cpu")
+            cfg = ckpt["cfg"]
+            self.organ_dict = cfg.dataset.organ_dict
+            net, self.max_stride = get_network(
+                cfg.network.net_name,
+                cfg.network.in_channels,
+                cfg.network.out_channels,
+                cfg.network.dimensions,
+                cfg.network.normalization,
+                cfg.network.base,
+                cfg.network.downsample,
+            )
+            net.load_state_dict(ckpt["model_state_dict"])
+            if torch.cuda.is_available():
+                net = net.cuda()
+            self.net = net.eval()
 
         self.cfg = cfg
         self.dimensions = cfg.network.get("dimensions", 3)
@@ -57,7 +132,7 @@ class CropSegmentor(object):
         self.expand = cfg.dataset.expand
         self.min_value = cfg.dataset.normalization_params.min_value
         self.max_value = cfg.dataset.normalization_params.max_value
-        self.seg_prob_th = 0.5
+        self.seg_prob_th = 0.55
         self.seg_size_th = 300
 
         if verbose:
@@ -168,18 +243,21 @@ class CropSegmentor(object):
         assert len(label) == predictions.size()[0] - 1
         mask_crop_tensor_list, probmap_crop_tensor_list = [], []
         for i in range(1, predictions.size()[0]):
+            seg_prob_th = self.seg_prob_th
             probmap_crop_tensor = predictions[i, :, :, :].detach().clone()
-            probmap_crop_tensor[probmap_crop_tensor < self.seg_prob_th] = 0
+            probmap_crop_tensor[probmap_crop_tensor < seg_prob_th] = 0
             mask_crop_tensor = probmap_crop_tensor.new_zeros(
                 probmap_crop_tensor.size(), dtype=torch.uint8
             )
-            mask_crop_tensor[probmap_crop_tensor >= self.seg_prob_th] = 1
+            mask_crop_tensor[probmap_crop_tensor >= seg_prob_th] = 1
             if self.run_remove_scc:
                 mask_crop_np = mask_crop_tensor.cpu().numpy() > 0
                 label_mask_np, num_cc = measure.label(mask_crop_np, return_num=True)
 
                 if num_cc > 1:
-                    label_mask_tensor = torch.from_numpy(label_mask_np).cuda()
+                    label_mask_tensor = torch.from_numpy(label_mask_np)
+                    if torch.cuda.is_available():
+                        label_mask_tensor = label_mask_tensor.cuda()
                     regions = measure.regionprops(label_mask_np)
                     regions.sort(key=lambda x: x.area, reverse=True)
                     seg_size_th = regions[0].area / 6
@@ -197,7 +275,9 @@ class CropSegmentor(object):
         labels_ret, crop_frames_ret, mask_crops, probmap_crops = [], [], [], []
         for label, crop_frame, im_crop in zip(labels, crop_frames, im_crops):
             im_crop_np = sitk.GetArrayFromImage(im_crop)
-            im_crop_tensor = torch.from_numpy(im_crop_np).unsqueeze(0).unsqueeze(0).cuda()
+            im_crop_tensor = torch.from_numpy(im_crop_np).unsqueeze(0).unsqueeze(0)
+            if torch.cuda.is_available():
+                im_crop_tensor = im_crop_tensor.cuda()
 
             cluster = self.organ_dict[str(label)]["cluster"]
             if cluster not in self.net.keys():
@@ -253,22 +333,27 @@ class CropSegmentor(object):
             for probmap_crop, crop_frame in zip(probmap_crops, crop_frames)
         ]
 
-        mask_ft, _, _ = merge_mask_by_prob_patches(
-            Frame3d(image),
-            image.GetSize(),
-            framed_mask_crops,
-            framed_probmap_crops,
-            labels,
-            use_gpu=True,
-            work_with_float16=work_with_float16,
-        )
+        try:
+            mask_ft, _, _ = merge_mask_by_prob_patches(
+                Frame3d(image),
+                image.GetSize(),
+                framed_mask_crops,
+                framed_probmap_crops,
+                labels,
+                use_gpu=True,
+                work_with_float16=work_with_float16,
+            )
+        except Exception as e:
+            raise ValueError(f"Error on {case_name}: {e}")
 
         if self.run_remove_scc:
             tmp_mask_np = mask_ft.tensor.cpu().numpy()
             tmp_label_np, num_cc = measure.label(tmp_mask_np, return_num=True)
             if num_cc > len(labels):
                 regions = measure.regionprops(tmp_label_np)
-                tmp_label_tensor = torch.from_numpy(tmp_label_np).cuda()
+                tmp_label_tensor = torch.from_numpy(tmp_label_np)
+                if torch.cuda.is_available():
+                    tmp_label_tensor = tmp_label_tensor.cuda()
                 for r in regions:
                     if r.area > self.seg_size_th:
                         tmp_label_tensor[tmp_label_tensor == r.label] = 0
@@ -295,19 +380,9 @@ class CropSegmentor(object):
         if self.verbose:
             print(f"seg crops time: {seg_crops_end - get_crops_end: .2f} seconds")
 
-        if self.run_profile:
-            profile = line_profiler.LineProfiler(self.merge_crops)
-            profile.enable()
-
         seg_result = self.merge_crops(
             case_name, image, labels, mask_crops, probmap_crops, crop_frames
         )
-
-        if self.run_profile:
-            profile.disable()
-            print("\n\n")
-            profile.print_stats(sys.stdout)
-            print("\n\n")
 
         merge_crops_end = time.time()
         if self.verbose:
