@@ -33,7 +33,7 @@ def start_distributed_training(**kwargs):
     wrap it into his own command-line distributed_training function
 
     :param kwargs: key arguments including: train_file, config_file, gpu_ids,
-                   tag[Optional], num_trheads[Optional], master_port[Optional]
+                   tag[Optional], num_threads[Optional], master_port[Optional]
     :return: None
 
     Example Usage:
@@ -44,7 +44,7 @@ def start_distributed_training(**kwargs):
             parser.add_argument("-g", "--gpu_ids", type=str, default="0,1,2,3", help="gpus to use")
             parser.add_argument("-t", "--tag", type=str, default="default_tag",
                                 help="distinct from other trials")
-            parser.add_argument('-n', "--num_trheads", type=int, default=2)
+            parser.add_argument('-n', "--num_threads", type=int, default=2)
             parser.add_argument("-p", "--master_port", type=int, default=29500, help="master port")
 
             args = parser.parse_args()
@@ -83,7 +83,7 @@ def med_query_det_train_dist():
     parser.add_argument(
         "-t", "--tag", type=str, default="default_tag", help="distinct from other trials"
     )
-    parser.add_argument("-n", "--num_trheads", type=int, default=2)
+    parser.add_argument("-n", "--num_threads", type=int, default=2)
     parser.add_argument("-p", "--master_port", type=int, default=29500, help="master port")
 
     args = parser.parse_args()
@@ -99,7 +99,7 @@ def med_query_seg_train_dist():
     parser.add_argument(
         "-t", "--tag", type=str, default="default_tag", help="distinct from other trials"
     )
-    parser.add_argument("-n", "--num_trheads", type=int, default=2)
+    parser.add_argument("-n", "--num_threads", type=int, default=2)
     parser.add_argument("-p", "--master_port", type=int, default=29500, help="master port")
 
     args = parser.parse_args()

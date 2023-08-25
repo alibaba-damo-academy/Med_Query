@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-echo "USAGE: sh start_distributed_training.sh train_file_path config_path gpus tag [num_therads_per_process=4] [port=29500]"
+echo "USAGE: sh start_distributed_training.sh train_file_path config_path gpus tag [num_threads_per_process=4] [port=29500]"
 echo "the train_file should accept -c -t for config_path and tag respectively"
 echo "--local_rank is also needed if torch version lower than 1.10"
 
