@@ -149,7 +149,7 @@ def cal_dsc(
         max_corner_2, _ = v2.max(dim=1)
 
     spz, spy, spx = torch.minimum(min_corner_1, min_corner_2)
-    epz, epy, epx = torch.maximum(max_corner_1, max_corner_2)
+    epz, epy, epx = torch.maximum(max_corner_1, max_corner_2) + 1
 
     result_index = result_tensor[spz:epz, spy:epy, spx:epx].long()
     label_index = label_tensor[spz:epz, spy:epy, spx:epx].long()
