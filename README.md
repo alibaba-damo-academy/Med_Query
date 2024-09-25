@@ -1,7 +1,7 @@
 ## Med_Query
 Med_Query is an effective and efficient framework for medical image analysis. This repository is the  
 official implementation of our paper:   
-- "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding" (in revision).
+- "Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embeding"
 
 <img src=figures/poc.png width=80% />
 
@@ -166,13 +166,12 @@ Med_Query is released under the Apache 2.0 license.
 ## Citation
 If you find this project useful in your research, please cite the following paper:
 ```
-@misc{guo2022medquery,
+@misc{guo2024med,
       title={Med-Query: Steerable Parsing of 9-DoF Medical Anatomies with Query Embedding}, 
       author={Heng Guo and Jianfeng Zhang and Ke Yan and Le Lu and Minfeng Xu},
-      year={2022},
-      eprint={2212.02014},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+      journal={IEEE Journal of Biomedical and Health Informatics},
+      year={2024},
+      publisher={IEEE}
 }
 ```
 
